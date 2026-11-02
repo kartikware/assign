@@ -1,0 +1,815 @@
+CRYPTOGRAPHY PRACTICAL - ASSIGNMENT 9 NOTES
+==========================================================
+
+This file contains only the notes for this assignment, followed by shared definitions and Python syntax that help explain its code.
+
+ASSIGNMENT 9 - SECURE IMAGE TRANSMISSION USING RSA,
+              AES-GCM AND DIGITAL SIGNATURE
+============================================================
+
+1. AIM
+------
+To implement a hybrid cryptographic system for secure image transmission between Alice
+and Bob using AES-GCM encryption, RSA-OAEP key wrapping and RSA-PSS digital signatures.
+
+2. DEFINITIONS
+--------------
+Hybrid encryption:
+Combines symmetric and asymmetric cryptography.
+
+AES:
+Advanced Encryption Standard. A symmetric encryption algorithm.
+
+AES-256:
+AES using a 256-bit secret key.
+
+GCM:
+Galois/Counter Mode. An authenticated encryption mode that provides confidentiality and
+integrity.
+
+Nonce:
+A value used once with a given key. AES-GCM requires nonce uniqueness for each key.
+
+RSA:
+An asymmetric cryptographic algorithm.
+
+OAEP:
+Optimal Asymmetric Encryption Padding. Used here for RSA encryption of the AES key.
+
+PSS:
+Probabilistic Signature Scheme. Used here for RSA digital signatures.
+
+SHA-256:
+A hash function that produces a 256-bit digest.
+
+Base64:
+An encoding that represents binary data as printable text.
+
+Ciphertext:
+Encrypted data.
+
+Authentication tag:
+A value used by AES-GCM to detect tampering.
+
+Wrapped key:
+The AES key after it has been encrypted using Bob's RSA public key.
+
+3. WHY HYBRID ENCRYPTION?
+-------------------------
+AES is fast and suitable for large files such as images.
+RSA is not suitable for directly encrypting large images.
+RSA is used to encrypt the small AES key.
+The image itself is encrypted using AES-GCM.
+
+Alice:
+    Encrypts image using AES-GCM.
+    Encrypts AES key using Bob's RSA public key.
+    Signs the encrypted package using Alice's RSA private key.
+
+Bob:
+    Verifies Alice's signature using Alice's public key.
+    Decrypts AES key using Bob's RSA private key.
+    Decrypts image using AES-GCM.
+
+4. MATHEMATICAL FORMULAS
+------------------------
+
+AES-GCM encryption:
+
+    (C, T) = Encrypt(K, N, P, A)
+
+Where:
+    K = AES secret key
+    N = nonce
+    P = plaintext image
+    A = additional authenticated data
+    C = ciphertext
+    T = authentication tag
+
+In the program, A is None.
+
+AES-GCM decryption:
+
+    P = Decrypt(K, N, C, A, T)
+
+Decryption succeeds only if authentication is valid.
+
+AES key size:
+
+    256 bits = 32 bytes
+
+Nonce size in this program:
+
+    12 bytes * 8 = 96 bits
+
+RSA key wrapping:
+
+    C_K = RSAEncrypt(Bob_Public_Key, AES_Key)
+
+RSA key recovery:
+
+    AES_Key = RSADecrypt(Bob_Private_Key, C_K)
+
+Signed package data:
+
+    D = Prefix || Wrapped_Key || Nonce || Ciphertext
+
+Here || means concatenation.
+
+Digital signature:
+
+    S = RSASign(Alice_Private_Key, SHA256(D))
+
+Signature verification:
+
+    Verify(Alice_Public_Key, D, S) = True
+
+5. CODE EXPLANATION
+-------------------
+
+import os
+Used for file operations and secure random bytes.
+
+import json
+Used to save and read the encrypted package in JSON format.
+
+import base64
+Used to encode and decode binary values.
+
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+Imports RSA and padding schemes.
+
+from cryptography.hazmat.primitives import hashes
+Imports hash algorithms.
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+Imports authenticated AES-GCM encryption.
+
+from cryptography.exceptions import InvalidSignature, InvalidTag
+Imports exceptions for signature and authentication failures.
+
+STEP 1: RSA KEY GENERATION
+
+alice_private = rsa.generate_private_key(
+    public_exponent=65537,
+    key_size=3072
+)
+
+Generates Alice's RSA private key.
+
+public_exponent=65537:
+A commonly used RSA public exponent.
+
+key_size=3072:
+Uses a 3072-bit RSA modulus.
+
+alice_public = alice_private.public_key()
+Extracts Alice's public key.
+
+Bob's keys are generated in the same way.
+
+STEP 2: HELPER FUNCTIONS
+
+def encode(data):
+    return base64.b64encode(data).decode("utf-8")
+
+base64.b64encode(data):
+Converts binary bytes into Base64 bytes.
+
+.decode("utf-8"):
+Converts Base64 bytes into a normal text string.
+
+def decode(data):
+    return base64.b64decode(data)
+
+Converts Base64 text back into binary bytes.
+
+def signature_data(wrapped_key, nonce, ciphertext):
+    return (
+        b"SECURE-IMAGE-V1"
+        + wrapped_key
+        + nonce
+        + ciphertext
+    )
+
+Combines a fixed prefix, wrapped key, nonce and ciphertext into one byte sequence.
+The + operator concatenates bytes.
+
+STEP 3: ALICE ENCRYPTS THE IMAGE
+
+with open(image_path, "rb") as file:
+    image_data = file.read()
+
+open():
+Opens a file.
+
+"rb":
+Read binary mode. Used for images because images are binary files.
+
+with:
+A context manager that automatically closes the file.
+
+file.read():
+Reads the file contents into memory.
+
+AES key generation:
+
+aes_key = AESGCM.generate_key(bit_length=256)
+
+Generates a random 256-bit AES key.
+
+Nonce generation:
+
+nonce = os.urandom(12)
+
+Generates 12 random bytes, or 96 bits.
+
+AES-GCM object:
+
+aes = AESGCM(aes_key)
+
+Creates an AES-GCM object using the secret key.
+
+Image encryption:
+
+ciphertext = aes.encrypt(nonce, image_data, None)
+
+Arguments:
+    nonce       = unique nonce
+    image_data  = original image bytes
+    None        = no additional authenticated data
+
+The returned ciphertext includes the authentication tag as part of the output format
+used by the library.
+
+RSA encryption of AES key:
+
+wrapped_key = bob_public.encrypt(
+    aes_key,
+    padding.OAEP(
+        mgf=padding.MGF1(
+            algorithm=hashes.SHA256()
+        ),
+        algorithm=hashes.SHA256(),
+        label=None
+    )
+)
+
+Uses Bob's public key to encrypt the AES key.
+
+OAEP:
+RSA encryption padding.
+
+MGF1:
+Mask Generation Function 1, used within OAEP.
+
+hashes.SHA256():
+Selects SHA-256.
+
+label=None:
+No optional OAEP label is supplied.
+
+Digital signature:
+
+signature = alice_private.sign(
+    signature_data(wrapped_key, nonce, ciphertext),
+    padding.PSS(
+        mgf=padding.MGF1(hashes.SHA256()),
+        salt_length=padding.PSS.MAX_LENGTH
+    ),
+    hashes.SHA256()
+)
+
+Alice signs the encrypted package using her private key.
+
+PSS:
+RSA signature padding.
+
+salt_length=PSS.MAX_LENGTH:
+Uses the maximum permitted PSS salt length.
+
+JSON package:
+
+package = {
+    "wrapped_key": encode(wrapped_key),
+    "nonce": encode(nonce),
+    "ciphertext": encode(ciphertext),
+    "signature": encode(signature)
+}
+
+A dictionary containing the four package fields.
+
+Saving package:
+
+with open("encrypted_image.json", "w") as file:
+    json.dump(package, file)
+
+"w":
+Write text mode.
+
+json.dump():
+Writes a Python object as JSON into the open file.
+
+STEP 4: BOB VERIFIES AND DECRYPTS
+
+Reading package:
+
+with open("encrypted_image.json", "r") as file:
+    package = json.load(file)
+
+"r":
+Read text mode.
+
+json.load():
+Reads JSON from a file and creates Python objects.
+
+Extracting values:
+
+package["wrapped_key"]
+Accesses the dictionary value with key "wrapped_key".
+
+decode(...)
+Converts Base64 text back into bytes.
+
+Signature verification:
+
+alice_public.verify(
+    signature,
+    signature_data(wrapped_key, nonce, ciphertext),
+    padding.PSS(
+        mgf=padding.MGF1(hashes.SHA256()),
+        salt_length=padding.PSS.MAX_LENGTH
+    ),
+    hashes.SHA256()
+)
+
+Uses Alice's public key to verify the package signature.
+
+If InvalidSignature is raised, the program prints an error and executes return.
+
+return:
+Immediately exits the current function.
+
+Recover AES key:
+
+aes_key = bob_private.decrypt(
+    wrapped_key,
+    padding.OAEP(
+        mgf=padding.MGF1(
+            algorithm=hashes.SHA256()
+        ),
+        algorithm=hashes.SHA256(),
+        label=None
+    )
+)
+
+Bob uses his private key to recover the AES key.
+
+Decrypt image:
+
+aes = AESGCM(aes_key)
+
+image_data = aes.decrypt(nonce, ciphertext, None)
+
+Decrypts the image and checks the GCM authentication tag.
+
+Save image:
+
+with open("received_image.png", "wb") as file:
+    file.write(image_data)
+
+"wb":
+Write binary mode.
+
+file.write():
+Writes the recovered image bytes to disk.
+
+Exception handling:
+
+except (ValueError, InvalidTag):
+    print("Decryption Failed!")
+
+Catches either ValueError or InvalidTag.
+
+InvalidTag means AES-GCM authentication failed.
+
+STEP 5: MAIN PROGRAM
+
+image_path = input("Enter image path: ")
+
+input():
+Accepts a value typed by the user.
+
+if os.path.isfile(image_path):
+Checks whether the path points to an existing file.
+
+encrypt_image(image_path)
+Runs encryption.
+
+decrypt_image()
+Runs verification and decryption.
+
+else:
+Runs if the image file does not exist.
+
+6. IMPORTANT PYTHON SYNTAX
+--------------------------
+import:
+    Imports a module.
+
+from ... import ...:
+    Imports selected names.
+
+def:
+    Defines a function.
+
+with:
+    Starts a context manager.
+
+open(path, "rb"):
+    Opens a file for binary reading.
+
+open(path, "wb"):
+    Opens a file for binary writing.
+
+os.urandom(12):
+    Generates 12 secure random bytes.
+
+AESGCM(key):
+    Creates an AES-GCM object.
+
+.encrypt():
+    Encrypts data.
+
+.decrypt():
+    Decrypts data and verifies authentication.
+
+padding.OAEP():
+    Configures RSA encryption padding.
+
+padding.PSS():
+    Configures RSA signature padding.
+
+MGF1:
+    Mask generation function used in OAEP/PSS.
+
+json.dump():
+    Writes JSON to a file.
+
+json.load():
+    Reads JSON from a file.
+
+base64.b64encode():
+    Encodes binary data as Base64.
+
+base64.b64decode():
+    Decodes Base64 into bytes.
+
+.decode("utf-8"):
+    Converts bytes into text.
+
+.encode("utf-8"):
+    Converts text into bytes.
+
+try / except:
+    Handles errors.
+
+return:
+    Exits a function and optionally returns a value.
+
+7. SECURITY PROPERTIES
+----------------------
+Confidentiality:
+AES-GCM encrypts the image.
+
+AES key protection:
+RSA-OAEP encrypts the AES key for Bob.
+
+Authentication:
+RSA-PSS signature verification checks that the package was signed by the holder of
+Alice's private key.
+
+Integrity:
+RSA-PSS and AES-GCM detect unauthorized changes to the signed package and encrypted data.
+
+8. IMPORTANT LIMITATIONS
+------------------------
+The program generates new RSA keys every time it runs. A real system must securely store
+keys and authenticate Alice's public key.
+
+The output filename is always received_image.png. This assumes the input image is PNG.
+For other image formats, the output extension should match the actual image format.
+
+A 96-bit GCM nonce must not be reused with the same AES key.
+
+Base64 is encoding, not encryption.
+
+9. VIVA QUESTIONS
+-----------------
+Q: What is hybrid encryption?
+A: A combination of symmetric and asymmetric cryptography.
+
+Q: Why AES for images?
+A: AES is efficient for large data.
+
+Q: Why RSA for the AES key?
+A: RSA allows Alice to encrypt the AES key for Bob using Bob's public key.
+
+Q: What is AES-GCM?
+A: An authenticated encryption mode providing confidentiality and integrity.
+
+Q: What is a nonce?
+A: A value used once with a particular key; it must be unique for each AES-GCM encryption
+under that key.
+
+Q: What is OAEP?
+A: RSA encryption padding.
+
+Q: What is PSS?
+A: RSA digital-signature padding.
+
+Q: Why Base64?
+A: To represent binary data as printable text for JSON storage.
+
+Q: Which key does Alice use to sign?
+A: Alice's private key.
+
+Q: Which key does Bob use to verify?
+A: Alice's public key.
+
+Q: Which key does Alice use to encrypt the AES key?
+A: Bob's public key.
+
+Q: Which key does Bob use to decrypt the AES key?
+A: Bob's private key.
+
+Q: What happens if the package is modified?
+A: Signature verification should fail. AES-GCM also checks the authentication tag.
+
+Q: Is Base64 encryption?
+A: No. It is an encoding scheme.
+
+
+============================================================
+
+ASSIGNMENT-SPECIFIC FORMULA REVISION
+--------------------------------------
+ASSIGNMENT 9 - HYBRID ENCRYPTION
+
+    (C,T) = AES-GCM-Encrypt(K,N,P,A)
+    AES key size = 256 bits = 32 bytes
+    Nonce size = 12 bytes = 96 bits
+    Wrapped_Key = RSA-OAEP-Encrypt(Bob_Public_Key, AES_Key)
+    D = Prefix || Wrapped_Key || Nonce || Ciphertext
+    Signature = RSA-PSS-Sign(Alice_Private_Key, SHA256(D))
+    Verify(Alice_Public_Key, D, Signature) = True
+
+
+============================================================
+FINAL PRACTICAL EXAM PREPARATION CHECKLIST
+============================================================
+
+[ ] I can explain the aim of each assignment.
+[ ] I can define every algorithm used.
+[ ] I can identify which key encrypts, decrypts, signs and verifies.
+[ ] I can write the important mathematical formulas.
+[ ] I can explain modular arithmetic and pow().
+[ ] I can explain XOR, bit shifts and bit rotation.
+[ ] I can explain hashing and digest comparison.
+[ ] I can explain Diffie-Hellman and the MITM attack.
+[ ] I can explain DSA signature generation and verification.
+[ ] I can explain AES-GCM, RSA-OAEP and RSA-PSS.
+[ ] I can explain try-except and return.
+[ ] I can explain bytes, encode(), decode() and hex().
+[ ] I can explain file modes rb, wb, r and w.
+[ ] I can explain Base64 and JSON.
+[ ] I can explain the output and limitations of each supplied program.
+
+END OF NOTES
+
+COMMON CRYPTOGRAPHY DEFINITIONS
+============================================================
+
+Symmetric cryptography:
+Uses the same secret key for encryption and decryption.
+
+Asymmetric cryptography:
+Uses a related public key and private key.
+
+Encryption:
+Transforms readable data into ciphertext using an algorithm and key.
+
+Decryption:
+Recovers plaintext from ciphertext using the appropriate key.
+
+Hashing:
+Maps input data to a fixed-length digest.
+
+Digital signature:
+A value generated with a private key and checked with the public key.
+
+Key exchange:
+A process through which parties establish a shared secret.
+
+Confidentiality:
+Only authorized parties can read the information.
+
+Integrity:
+Unauthorized changes to data can be detected.
+
+Authentication:
+Verifies the identity or origin of a communication.
+
+Non-repudiation:
+Provides evidence of origin or signing, subject to secure key control and identity binding.
+
+Plaintext:
+Original readable information.
+
+Ciphertext:
+Encrypted information.
+
+Nonce:
+A value used once with a cryptographic key.
+
+Salt:
+Random data added to a password before password hashing.
+
+Padding:
+Extra structured data added to fit or secure a cryptographic operation.
+
+Modulus:
+The number by which a value is reduced in modular arithmetic.
+
+Digest:
+The output of a hash function.
+
+
+============================================================
+
+PYTHON SYNTAX QUICK REFERENCE
+============================================================
+
+def:
+    Defines a function.
+
+return:
+    Returns a value or exits a function.
+
+import:
+    Imports a module.
+
+from module import name:
+    Imports a specific name.
+
+if:
+    Checks a condition.
+
+else:
+    Runs when the if condition is false.
+
+elif:
+    Checks another condition.
+
+for:
+    Repeats over a sequence.
+
+while:
+    Repeats while a condition is true.
+
+try:
+    Starts an exception-handling block.
+
+except:
+    Handles an exception.
+
+raise:
+    Raises an exception manually.
+
+assert:
+    Checks that a condition is true.
+
+with:
+    Uses a context manager.
+
+as:
+    Gives an imported or context-managed object a local name.
+
+input():
+    Reads user input.
+
+print():
+    Displays output.
+
+len():
+    Returns the length of an object.
+
+range():
+    Generates a sequence of integers.
+
+enumerate():
+    Provides index and item during iteration.
+
+append():
+    Adds an item to a list.
+
+return:
+    Sends a result back from a function.
+
+==
+    Equality comparison.
+
+!=
+    Not-equal comparison.
+
+=
+    Assignment.
+
++
+    Addition or concatenation.
+
+-
+    Subtraction.
+
+*
+    Multiplication.
+
+/
+    Division.
+
+//
+    Floor division.
+
+%
+    Modulus/remainder.
+
+**
+    Exponentiation.
+
+^
+    Bitwise XOR.
+
+&
+    Bitwise AND.
+
+|
+    Bitwise OR.
+
+<<
+    Bitwise left shift.
+
+>>
+    Bitwise right shift.
+
+b"text":
+    Bytes literal.
+
+.encode():
+    Converts string to bytes.
+
+.decode():
+    Converts bytes to string.
+
+.hex():
+    Converts bytes to hexadecimal text.
+
+bytes.fromhex():
+    Converts hexadecimal text to bytes.
+
+bytearray():
+    Creates mutable bytes.
+
+pow(a, b, c):
+    Calculates a^b modulo c.
+
+os.urandom(n):
+    Generates n secure random bytes.
+
+json.dump(obj, file):
+    Writes JSON to a file.
+
+json.load(file):
+    Reads JSON from a file.
+
+base64.b64encode(data):
+    Encodes bytes as Base64.
+
+base64.b64decode(data):
+    Decodes Base64 to bytes.
+
+statistics.mean(values):
+    Calculates average.
+
+time.perf_counter():
+    Gets a high-resolution timer value.
+
+f"{value:.6f}":
+    Formats a number with 6 digits after the decimal point.
+
+
+============================================================
+
+Commands to read this file:
+    nano assignment_9_notes.txt
+    cat assignment_9_notes.txt
+    less assignment_9_notes.txt   (press q to exit)

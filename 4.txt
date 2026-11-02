@@ -1,0 +1,504 @@
+CRYPTOGRAPHY PRACTICAL - ASSIGNMENT 4 NOTES
+==========================================================
+
+This file contains only the notes for this assignment, followed by shared definitions and Python syntax that help explain its code.
+
+ASSIGNMENT 4 - CUSTOM ENCRYPTION AND DECRYPTION USING XOR
+             AND BIT ROTATION
+============================================================
+
+1. AIM
+------
+To implement a simple custom encryption and decryption method using XOR, a generated
+key stream and byte rotation.
+
+2. DEFINITIONS
+--------------
+XOR:
+Exclusive OR. A bitwise operation that outputs 1 when the two input bits differ.
+
+Bit rotation:
+A circular shift in which bits shifted out from one side are brought back on the other side.
+
+Byte:
+A group of 8 bits.
+
+Key stream:
+A sequence of key-derived values used to combine with plaintext bytes.
+
+Plaintext:
+Original readable input.
+
+Ciphertext:
+Encrypted output.
+
+UTF-8:
+A character encoding that converts text into bytes.
+
+Hexadecimal:
+A base-16 representation using digits 0-9 and letters A-F.
+
+3. MATHEMATICAL FORMULAS
+------------------------
+
+XOR encryption:
+
+    X = P XOR K
+
+XOR decryption:
+
+    P = X XOR K
+
+This works because:
+
+    (P XOR K) XOR K = P
+
+Key stream in the supplied program:
+
+    key_bytes = UTF8(key)
+
+    k_i = key_bytes[i mod L]
+
+    dynamic_key_i = (k_i + 17*i) mod 256
+
+Where:
+    i = byte position
+    L = number of bytes in the key
+    k_i = selected key byte
+
+Rotation amount:
+
+    shift = (i mod 7) + 1
+
+Therefore shift values range from 1 to 7.
+
+8-bit left rotation:
+
+    ROL(x,s) = ((x << s) OR (x >> (8-s))) AND 255
+
+8-bit right rotation:
+
+    ROR(x,s) = ((x >> s) OR (x << (8-s))) AND 255
+
+Encryption per byte:
+
+    x = plaintext_byte XOR dynamic_key
+    encrypted_byte = ROL(x, shift)
+
+Decryption per byte:
+
+    x = ROR(encrypted_byte, shift)
+    plaintext_byte = x XOR dynamic_key
+
+The mask 255 is used because:
+
+    255 decimal = 11111111 binary
+
+It keeps only the lowest 8 bits.
+
+4. CODE EXPLANATION
+-------------------
+
+def rotate_left(value, shift):
+Defines a function that rotates an 8-bit value to the left.
+
+shift %= 8
+Keeps the shift within the range 0 to 7.
+
+(value << shift)
+Shifts bits to the left.
+
+(value >> (8 - shift))
+Moves the bits that would be lost on the left back to the right.
+
+|:
+Bitwise OR. Combines the two bit patterns.
+
+& 0xFF:
+Keeps only 8 bits. 0xFF is hexadecimal for 255.
+
+def rotate_right(value, shift):
+Defines the reverse circular rotation.
+
+def generate_key_stream(key, length):
+Creates a key stream of the requested length.
+
+key.encode("utf-8")
+Converts the key string into UTF-8 bytes.
+
+if not key_bytes:
+Checks whether the key is empty.
+
+raise ValueError("Key cannot be empty")
+Raises an error if the key is empty.
+
+stream = []
+Creates an empty list.
+
+for i in range(length):
+Repeats once for every plaintext byte.
+
+key_bytes[i % len(key_bytes)]
+Selects a key byte cyclically. The modulo operator makes the index repeat.
+
+dynamic_key = (k + i * 17) % 256
+Creates a position-dependent byte value.
+
+stream.append(dynamic_key)
+Adds the value to the key stream.
+
+def encrypt(plaintext, key):
+Defines the encryption function.
+
+plaintext.encode("utf-8")
+Converts the message to bytes.
+
+bytearray()
+Creates a mutable sequence of bytes.
+
+enumerate(data)
+Returns both the index and the value for each item.
+
+byte ^ key_stream[i]
+Applies bitwise XOR.
+
+encrypted.append(...)
+Adds an encrypted byte.
+
+encrypted.hex()
+Converts encrypted bytes into hexadecimal text.
+
+def decrypt(ciphertext, key):
+Defines the decryption function.
+
+bytes.fromhex(ciphertext)
+Converts hexadecimal text back into bytes.
+
+rotate_right(byte, shift)
+Reverses the left rotation.
+
+decrypted.decode("utf-8")
+Converts recovered bytes into readable text.
+
+5. IMPORTANT PYTHON SYNTAX
+--------------------------
+def:
+    Defines a function.
+
+return:
+    Returns a result from a function.
+
+%:
+    Modulus/remainder operator.
+
+<<:
+    Bitwise left shift.
+
+>>:
+    Bitwise right shift.
+
+|:
+    Bitwise OR.
+
+&:
+    Bitwise AND.
+
+^:
+    Bitwise XOR.
+
+0xFF:
+    Hexadecimal representation of 255.
+
+bytearray():
+    Creates mutable bytes.
+
+enumerate():
+    Supplies index and value while looping.
+
+bytes.fromhex():
+    Converts hexadecimal text to bytes.
+
+.hex():
+    Converts bytes to hexadecimal text.
+
+.encode():
+    Converts string to bytes.
+
+.decode():
+    Converts bytes to string.
+
+6. IMPORTANT LIMITATION
+-----------------------
+This is a custom educational cipher, not a standard, professionally reviewed encryption
+algorithm. It should not be used to protect real confidential information. XOR and
+rotations alone do not provide modern authenticated encryption.
+
+7. VIVA QUESTIONS
+-----------------
+Q: What is XOR?
+A: A bitwise operation that gives 1 when input bits differ.
+
+Q: Why can XOR be reversed?
+A: Applying the same key a second time restores the original value.
+
+Q: What is bit rotation?
+A: Circular movement of bits within a fixed-width value.
+
+Q: Why is 255 used?
+A: It is an 8-bit mask that retains only the lowest 8 bits.
+
+Q: What is UTF-8?
+A: A character encoding used to convert text into bytes.
+
+Q: What does enumerate() do?
+A: It returns the index and value of each item during iteration.
+
+Q: Why is bytearray used?
+A: It allows bytes to be appended and modified.
+
+Q: What does hex() do?
+A: It converts binary bytes into hexadecimal text.
+
+
+============================================================
+
+ASSIGNMENT-SPECIFIC FORMULA REVISION
+--------------------------------------
+ASSIGNMENT 4 - XOR AND ROTATION
+
+    C = P XOR K
+    P = C XOR K
+
+    dynamic_key_i = (key_byte_i + 17*i) mod 256
+
+    shift = (i mod 7) + 1
+
+    ROL(x,s) = ((x << s) OR (x >> (8-s))) AND 255
+    ROR(x,s) = ((x >> s) OR (x << (8-s))) AND 255
+
+COMMON CRYPTOGRAPHY DEFINITIONS
+============================================================
+
+Symmetric cryptography:
+Uses the same secret key for encryption and decryption.
+
+Asymmetric cryptography:
+Uses a related public key and private key.
+
+Encryption:
+Transforms readable data into ciphertext using an algorithm and key.
+
+Decryption:
+Recovers plaintext from ciphertext using the appropriate key.
+
+Hashing:
+Maps input data to a fixed-length digest.
+
+Digital signature:
+A value generated with a private key and checked with the public key.
+
+Key exchange:
+A process through which parties establish a shared secret.
+
+Confidentiality:
+Only authorized parties can read the information.
+
+Integrity:
+Unauthorized changes to data can be detected.
+
+Authentication:
+Verifies the identity or origin of a communication.
+
+Non-repudiation:
+Provides evidence of origin or signing, subject to secure key control and identity binding.
+
+Plaintext:
+Original readable information.
+
+Ciphertext:
+Encrypted information.
+
+Nonce:
+A value used once with a cryptographic key.
+
+Salt:
+Random data added to a password before password hashing.
+
+Padding:
+Extra structured data added to fit or secure a cryptographic operation.
+
+Modulus:
+The number by which a value is reduced in modular arithmetic.
+
+Digest:
+The output of a hash function.
+
+
+============================================================
+
+PYTHON SYNTAX QUICK REFERENCE
+============================================================
+
+def:
+    Defines a function.
+
+return:
+    Returns a value or exits a function.
+
+import:
+    Imports a module.
+
+from module import name:
+    Imports a specific name.
+
+if:
+    Checks a condition.
+
+else:
+    Runs when the if condition is false.
+
+elif:
+    Checks another condition.
+
+for:
+    Repeats over a sequence.
+
+while:
+    Repeats while a condition is true.
+
+try:
+    Starts an exception-handling block.
+
+except:
+    Handles an exception.
+
+raise:
+    Raises an exception manually.
+
+assert:
+    Checks that a condition is true.
+
+with:
+    Uses a context manager.
+
+as:
+    Gives an imported or context-managed object a local name.
+
+input():
+    Reads user input.
+
+print():
+    Displays output.
+
+len():
+    Returns the length of an object.
+
+range():
+    Generates a sequence of integers.
+
+enumerate():
+    Provides index and item during iteration.
+
+append():
+    Adds an item to a list.
+
+return:
+    Sends a result back from a function.
+
+==
+    Equality comparison.
+
+!=
+    Not-equal comparison.
+
+=
+    Assignment.
+
++
+    Addition or concatenation.
+
+-
+    Subtraction.
+
+*
+    Multiplication.
+
+/
+    Division.
+
+//
+    Floor division.
+
+%
+    Modulus/remainder.
+
+**
+    Exponentiation.
+
+^
+    Bitwise XOR.
+
+&
+    Bitwise AND.
+
+|
+    Bitwise OR.
+
+<<
+    Bitwise left shift.
+
+>>
+    Bitwise right shift.
+
+b"text":
+    Bytes literal.
+
+.encode():
+    Converts string to bytes.
+
+.decode():
+    Converts bytes to string.
+
+.hex():
+    Converts bytes to hexadecimal text.
+
+bytes.fromhex():
+    Converts hexadecimal text to bytes.
+
+bytearray():
+    Creates mutable bytes.
+
+pow(a, b, c):
+    Calculates a^b modulo c.
+
+os.urandom(n):
+    Generates n secure random bytes.
+
+json.dump(obj, file):
+    Writes JSON to a file.
+
+json.load(file):
+    Reads JSON from a file.
+
+base64.b64encode(data):
+    Encodes bytes as Base64.
+
+base64.b64decode(data):
+    Decodes Base64 to bytes.
+
+statistics.mean(values):
+    Calculates average.
+
+time.perf_counter():
+    Gets a high-resolution timer value.
+
+f"{value:.6f}":
+    Formats a number with 6 digits after the decimal point.
+
+
+============================================================
+
+Commands to read this file:
+    nano assignment_4_notes.txt
+    cat assignment_4_notes.txt
+    less assignment_4_notes.txt   (press q to exit)

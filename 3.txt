@@ -1,0 +1,497 @@
+CRYPTOGRAPHY PRACTICAL - ASSIGNMENT 3 NOTES
+==========================================================
+
+This file contains only the notes for this assignment, followed by shared definitions and Python syntax that help explain its code.
+
+ASSIGNMENT 3 - RSA PERFORMANCE ANALYSIS
+============================================================
+
+1. AIM
+------
+To study RSA public-key cryptography and compare key generation, encryption and
+decryption time for different RSA key sizes and message sizes.
+
+2. DEFINITIONS
+--------------
+Cryptography:
+The science of protecting information using mathematical techniques.
+
+RSA:
+An asymmetric cryptographic algorithm. It uses a public key and a private key.
+
+Public key:
+The key that can be shared. In RSA it is used for encryption or signature verification,
+depending on the operation.
+
+Private key:
+The secret key. In RSA it is used for decryption or signing, depending on the operation.
+
+Plaintext:
+The original readable message.
+
+Ciphertext:
+The encrypted form of the message.
+
+Padding:
+A structured method applied before RSA encryption or signing. Padding is required for
+secure use of RSA.
+
+OAEP:
+Optimal Asymmetric Encryption Padding. It is a padding scheme used with RSA encryption.
+
+SHA-256:
+A cryptographic hash function that produces a 256-bit digest.
+
+Performance analysis:
+Measuring how long an operation takes and comparing the results.
+
+3. MATHEMATICAL FORMULAS
+------------------------
+
+RSA key generation:
+
+Choose two large prime numbers p and q.
+
+    n = p * q
+
+Euler's totient:
+
+    phi(n) = (p - 1) * (q - 1)
+
+Choose public exponent e such that:
+
+    1 < e < phi(n)
+    gcd(e, phi(n)) = 1
+
+Calculate private exponent d:
+
+    d * e = 1 mod phi(n)
+
+Equivalently:
+
+    d = e^(-1) mod phi(n)
+
+Public key:
+
+    (e, n)
+
+Private key:
+
+    (d, n)
+
+RSA encryption (textbook mathematical form):
+
+    C = M^e mod n
+
+RSA decryption:
+
+    M = C^d mod n
+
+Here:
+    M = message represented as an integer
+    C = ciphertext represented as an integer
+    e = public exponent
+    d = private exponent
+    n = RSA modulus
+
+The supplied program uses RSA-OAEP with SHA-256. Therefore the actual library operation
+includes OAEP encoding and is not simply raw textbook RSA.
+
+OAEP maximum message length:
+
+    mLen <= k - 2*hLen - 2
+
+Where:
+    mLen = maximum message length in bytes
+    k    = RSA modulus length in bytes
+    hLen = hash output length in bytes
+
+For SHA-256:
+
+    hLen = 32 bytes
+
+In the program:
+
+    max_len = key_size // 8 - 2 * 32 - 2
+
+Why key_size // 8?
+Because 8 bits = 1 byte.
+
+4. LIBRARIES USED
+-----------------
+import time
+    Measures elapsed time.
+
+import statistics
+    Calculates average time using statistics.mean().
+
+import secrets
+    Generates cryptographically secure random bytes.
+
+from Crypto.PublicKey import RSA
+    Generates RSA keys.
+
+from Crypto.Cipher import PKCS1_OAEP
+    Performs RSA encryption and decryption using OAEP padding.
+
+from Crypto.Hash import SHA256
+    Supplies SHA-256 to OAEP.
+
+5. CODE EXPLANATION
+-------------------
+
+key_sizes = [1024, 2048, 3072, 4096]
+A Python list containing RSA key sizes in bits.
+
+message_sizes = [128, 256, 512, 1024]
+A list containing the required message sizes in bits.
+
+iterations = 10
+Each experiment is repeated 10 times to obtain an average.
+
+for key_size in key_sizes:
+    Repeats the experiment for every RSA key size.
+
+key_times = []
+Creates an empty list to store key-generation times.
+
+start = time.perf_counter()
+Records a high-resolution start time.
+
+private_key = RSA.generate(key_size)
+Generates the RSA private key.
+
+public_key = private_key.publickey()
+Extracts the corresponding public key.
+
+end = time.perf_counter()
+Records the end time.
+
+key_times.append(end - start)
+Stores the elapsed time.
+
+statistics.mean(key_times)
+Calculates the average key-generation time.
+
+secrets.token_bytes((msg_size + 7) // 8)
+Generates random bytes for the requested message bit length.
+(msg_size + 7) // 8 rounds the number of bits up to a whole number of bytes.
+
+PKCS1_OAEP.new(public_key, hashAlgo=SHA256)
+Creates an OAEP encryptor using the public key and SHA-256.
+
+encryptor.encrypt(message)
+Encrypts the message.
+
+PKCS1_OAEP.new(private_key, hashAlgo=SHA256)
+Creates an OAEP decryptor using the private key.
+
+decryptor.decrypt(ciphertext)
+Decrypts the ciphertext.
+
+assert decrypted == message
+Checks that the decrypted message is exactly equal to the original.
+If the condition is false, Python raises AssertionError.
+
+f"{avg_enc:.8f}"
+An f-string. :.8f means display a floating-point number with 8 digits after the decimal.
+
+6. IMPORTANT PYTHON SYNTAX
+--------------------------
+for x in list:
+    Repeats a block for each item in a list.
+
+range(iterations):
+    Produces iteration values from 0 up to iterations - 1.
+
+append(value):
+    Adds an item to a list.
+
+perf_counter():
+    Returns a high-resolution performance counter.
+
+mean(values):
+    Returns the arithmetic average.
+
+//:
+    Floor division. Example: 10 // 3 = 3.
+
+assert condition:
+    Stops with an assertion error if the condition is false.
+
+7. EXPECTED OBSERVATION
+----------------------
+Larger RSA keys generally require more time for key generation and private-key operations.
+RSA encryption/decryption can only process messages within the OAEP size limit.
+RSA is not normally used to encrypt large files directly; hybrid encryption is preferred.
+
+8. VIVA QUESTIONS
+-----------------
+Q: What is RSA?
+A: An asymmetric cryptographic algorithm using public and private keys.
+
+Q: What is the purpose of the public key?
+A: In this program it encrypts the message.
+
+Q: What is the purpose of the private key?
+A: It decrypts the message.
+
+Q: Why is OAEP used?
+A: It provides secure randomized padding for RSA encryption.
+
+Q: Why is SHA-256 used?
+A: It is the hash function used by OAEP in this program.
+
+Q: Why is time.perf_counter() used?
+A: To measure operation time accurately.
+
+Q: Why is assert used?
+A: To check that decryption recovered the original message.
+
+Q: Why can RSA not encrypt arbitrarily large data?
+A: RSA has a strict maximum message size determined by the modulus and padding.
+
+Q: What is the difference between 1024-bit and 2048-bit RSA?
+A: The modulus sizes differ; 2048-bit RSA provides substantially stronger security than
+1024-bit RSA. 1024-bit RSA is obsolete for modern security.
+
+
+============================================================
+
+ASSIGNMENT-SPECIFIC FORMULA REVISION
+--------------------------------------
+ASSIGNMENT 3 - RSA
+
+    n = p * q
+    phi(n) = (p - 1) * (q - 1)
+    d = e^(-1) mod phi(n)
+    C = M^e mod n
+    M = C^d mod n
+    mLen <= k - 2*hLen - 2
+
+COMMON CRYPTOGRAPHY DEFINITIONS
+============================================================
+
+Symmetric cryptography:
+Uses the same secret key for encryption and decryption.
+
+Asymmetric cryptography:
+Uses a related public key and private key.
+
+Encryption:
+Transforms readable data into ciphertext using an algorithm and key.
+
+Decryption:
+Recovers plaintext from ciphertext using the appropriate key.
+
+Hashing:
+Maps input data to a fixed-length digest.
+
+Digital signature:
+A value generated with a private key and checked with the public key.
+
+Key exchange:
+A process through which parties establish a shared secret.
+
+Confidentiality:
+Only authorized parties can read the information.
+
+Integrity:
+Unauthorized changes to data can be detected.
+
+Authentication:
+Verifies the identity or origin of a communication.
+
+Non-repudiation:
+Provides evidence of origin or signing, subject to secure key control and identity binding.
+
+Plaintext:
+Original readable information.
+
+Ciphertext:
+Encrypted information.
+
+Nonce:
+A value used once with a cryptographic key.
+
+Salt:
+Random data added to a password before password hashing.
+
+Padding:
+Extra structured data added to fit or secure a cryptographic operation.
+
+Modulus:
+The number by which a value is reduced in modular arithmetic.
+
+Digest:
+The output of a hash function.
+
+
+============================================================
+
+PYTHON SYNTAX QUICK REFERENCE
+============================================================
+
+def:
+    Defines a function.
+
+return:
+    Returns a value or exits a function.
+
+import:
+    Imports a module.
+
+from module import name:
+    Imports a specific name.
+
+if:
+    Checks a condition.
+
+else:
+    Runs when the if condition is false.
+
+elif:
+    Checks another condition.
+
+for:
+    Repeats over a sequence.
+
+while:
+    Repeats while a condition is true.
+
+try:
+    Starts an exception-handling block.
+
+except:
+    Handles an exception.
+
+raise:
+    Raises an exception manually.
+
+assert:
+    Checks that a condition is true.
+
+with:
+    Uses a context manager.
+
+as:
+    Gives an imported or context-managed object a local name.
+
+input():
+    Reads user input.
+
+print():
+    Displays output.
+
+len():
+    Returns the length of an object.
+
+range():
+    Generates a sequence of integers.
+
+enumerate():
+    Provides index and item during iteration.
+
+append():
+    Adds an item to a list.
+
+return:
+    Sends a result back from a function.
+
+==
+    Equality comparison.
+
+!=
+    Not-equal comparison.
+
+=
+    Assignment.
+
++
+    Addition or concatenation.
+
+-
+    Subtraction.
+
+*
+    Multiplication.
+
+/
+    Division.
+
+//
+    Floor division.
+
+%
+    Modulus/remainder.
+
+**
+    Exponentiation.
+
+^
+    Bitwise XOR.
+
+&
+    Bitwise AND.
+
+|
+    Bitwise OR.
+
+<<
+    Bitwise left shift.
+
+>>
+    Bitwise right shift.
+
+b"text":
+    Bytes literal.
+
+.encode():
+    Converts string to bytes.
+
+.decode():
+    Converts bytes to string.
+
+.hex():
+    Converts bytes to hexadecimal text.
+
+bytes.fromhex():
+    Converts hexadecimal text to bytes.
+
+bytearray():
+    Creates mutable bytes.
+
+pow(a, b, c):
+    Calculates a^b modulo c.
+
+os.urandom(n):
+    Generates n secure random bytes.
+
+json.dump(obj, file):
+    Writes JSON to a file.
+
+json.load(file):
+    Reads JSON from a file.
+
+base64.b64encode(data):
+    Encodes bytes as Base64.
+
+base64.b64decode(data):
+    Decodes Base64 to bytes.
+
+statistics.mean(values):
+    Calculates average.
+
+time.perf_counter():
+    Gets a high-resolution timer value.
+
+f"{value:.6f}":
+    Formats a number with 6 digits after the decimal point.
+
+
+============================================================
+
+Commands to read this file:
+    nano assignment_3_notes.txt
+    cat assignment_3_notes.txt
+    less assignment_3_notes.txt   (press q to exit)

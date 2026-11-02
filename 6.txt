@@ -1,0 +1,400 @@
+CRYPTOGRAPHY PRACTICAL - ASSIGNMENT 6 NOTES
+==========================================================
+
+This file contains only the notes for this assignment, followed by shared definitions and Python syntax that help explain its code.
+
+ASSIGNMENT 6 - SHA-1 MESSAGE DIGEST AND INTEGRITY CHECK
+============================================================
+
+1. AIM
+------
+To calculate SHA-1 message digests for two messages, compare the digests and demonstrate
+a basic file-integrity check.
+
+2. DEFINITIONS
+--------------
+Hash function:
+A function that maps input data of arbitrary length to a fixed-length output.
+
+Cryptographic hash:
+A hash function designed to provide properties such as preimage resistance and collision
+resistance.
+
+SHA-1:
+Secure Hash Algorithm 1. It produces a 160-bit digest.
+
+Message digest:
+The fixed-length output produced by a hash function.
+
+Integrity:
+The property that data has not been altered.
+
+Collision:
+Two different inputs that produce the same hash output.
+
+3. MATHEMATICAL FORMULA
+-----------------------
+The program calculates:
+
+    digest = SHA1(message)
+
+SHA-1 output size:
+
+    160 bits
+
+Since one hexadecimal character represents 4 bits:
+
+    160 / 4 = 40 hexadecimal characters
+
+The program compares:
+
+    if digest1 == digest2:
+        hashes are equal
+    else:
+        hashes are different
+
+For an integrity check:
+
+    original_digest = SHA1(original_data)
+    downloaded_digest = SHA1(downloaded_data)
+
+If both values match, the data is consistent with the reference digest.
+
+IMPORTANT:
+SHA-1 is considered cryptographically broken for collision resistance and should not be
+used for modern security-sensitive integrity applications. Prefer SHA-256 or stronger.
+
+4. CODE EXPLANATION
+-------------------
+
+import hashlib
+Imports Python's hashing library.
+
+def calculate_sha1(text):
+Defines a function that accepts text.
+
+text.encode('utf-8')
+Converts the text into UTF-8 bytes because hash functions process bytes.
+
+hashlib.sha1(...)
+Creates a SHA-1 hash object.
+
+.hexdigest()
+Returns the digest as hexadecimal text.
+
+return
+Returns the digest to the caller.
+
+message1 = "Hello World"
+Stores the original message.
+
+message2 = "Hello world1"
+Stores a different message.
+
+digest1 = calculate_sha1(message1)
+Calculates the first digest.
+
+digest2 = calculate_sha1(message2)
+Calculates the second digest.
+
+if digest1 == digest2:
+Compares the two digest strings.
+
+else:
+Runs if the digests do not match.
+
+original_digest = calculate_sha1(message1)
+Calculates the reference digest.
+
+downloaded_digest = calculate_sha1(message1)
+In the supplied program, this line also hashes message1. It does not read a separate
+downloaded file.
+
+Therefore the file-integrity demonstration always compares the same input with itself
+and should succeed. A real file check would read the downloaded file separately.
+
+5. IMPORTANT PYTHON SYNTAX
+--------------------------
+import hashlib:
+    Imports the hash library.
+
+.encode('utf-8'):
+    Converts string to bytes.
+
+hashlib.sha1(data):
+    Creates a SHA-1 hash object.
+
+.hexdigest():
+    Returns a hexadecimal digest.
+
+==:
+    Equality comparison.
+
+if / else:
+    Conditional execution.
+
+return:
+    Sends a result back from a function.
+
+6. VIVA QUESTIONS
+-----------------
+Q: What is hashing?
+A: Converting data of arbitrary length into a fixed-length digest.
+
+Q: What is SHA-1 output size?
+A: 160 bits or 20 bytes.
+
+Q: How many hexadecimal characters does SHA-1 produce?
+A: 40 characters.
+
+Q: Is hashing reversible?
+A: No. A cryptographic hash is designed not to be reversed.
+
+Q: What is a hash collision?
+A: Two different inputs producing the same digest.
+
+Q: What is avalanche effect?
+A: A small input change causes a large change in the digest.
+
+Q: Why compare hashes?
+A: To detect whether data differs from a trusted reference.
+
+Q: Is SHA-1 recommended today?
+A: No. Use SHA-256 or stronger for modern security-sensitive applications.
+
+
+============================================================
+
+ASSIGNMENT-SPECIFIC FORMULA REVISION
+--------------------------------------
+ASSIGNMENT 6 - SHA-1
+
+    H = SHA1(message)
+    SHA-1 digest = 160 bits = 20 bytes = 40 hexadecimal characters
+
+COMMON CRYPTOGRAPHY DEFINITIONS
+============================================================
+
+Symmetric cryptography:
+Uses the same secret key for encryption and decryption.
+
+Asymmetric cryptography:
+Uses a related public key and private key.
+
+Encryption:
+Transforms readable data into ciphertext using an algorithm and key.
+
+Decryption:
+Recovers plaintext from ciphertext using the appropriate key.
+
+Hashing:
+Maps input data to a fixed-length digest.
+
+Digital signature:
+A value generated with a private key and checked with the public key.
+
+Key exchange:
+A process through which parties establish a shared secret.
+
+Confidentiality:
+Only authorized parties can read the information.
+
+Integrity:
+Unauthorized changes to data can be detected.
+
+Authentication:
+Verifies the identity or origin of a communication.
+
+Non-repudiation:
+Provides evidence of origin or signing, subject to secure key control and identity binding.
+
+Plaintext:
+Original readable information.
+
+Ciphertext:
+Encrypted information.
+
+Nonce:
+A value used once with a cryptographic key.
+
+Salt:
+Random data added to a password before password hashing.
+
+Padding:
+Extra structured data added to fit or secure a cryptographic operation.
+
+Modulus:
+The number by which a value is reduced in modular arithmetic.
+
+Digest:
+The output of a hash function.
+
+
+============================================================
+
+PYTHON SYNTAX QUICK REFERENCE
+============================================================
+
+def:
+    Defines a function.
+
+return:
+    Returns a value or exits a function.
+
+import:
+    Imports a module.
+
+from module import name:
+    Imports a specific name.
+
+if:
+    Checks a condition.
+
+else:
+    Runs when the if condition is false.
+
+elif:
+    Checks another condition.
+
+for:
+    Repeats over a sequence.
+
+while:
+    Repeats while a condition is true.
+
+try:
+    Starts an exception-handling block.
+
+except:
+    Handles an exception.
+
+raise:
+    Raises an exception manually.
+
+assert:
+    Checks that a condition is true.
+
+with:
+    Uses a context manager.
+
+as:
+    Gives an imported or context-managed object a local name.
+
+input():
+    Reads user input.
+
+print():
+    Displays output.
+
+len():
+    Returns the length of an object.
+
+range():
+    Generates a sequence of integers.
+
+enumerate():
+    Provides index and item during iteration.
+
+append():
+    Adds an item to a list.
+
+return:
+    Sends a result back from a function.
+
+==
+    Equality comparison.
+
+!=
+    Not-equal comparison.
+
+=
+    Assignment.
+
++
+    Addition or concatenation.
+
+-
+    Subtraction.
+
+*
+    Multiplication.
+
+/
+    Division.
+
+//
+    Floor division.
+
+%
+    Modulus/remainder.
+
+**
+    Exponentiation.
+
+^
+    Bitwise XOR.
+
+&
+    Bitwise AND.
+
+|
+    Bitwise OR.
+
+<<
+    Bitwise left shift.
+
+>>
+    Bitwise right shift.
+
+b"text":
+    Bytes literal.
+
+.encode():
+    Converts string to bytes.
+
+.decode():
+    Converts bytes to string.
+
+.hex():
+    Converts bytes to hexadecimal text.
+
+bytes.fromhex():
+    Converts hexadecimal text to bytes.
+
+bytearray():
+    Creates mutable bytes.
+
+pow(a, b, c):
+    Calculates a^b modulo c.
+
+os.urandom(n):
+    Generates n secure random bytes.
+
+json.dump(obj, file):
+    Writes JSON to a file.
+
+json.load(file):
+    Reads JSON from a file.
+
+base64.b64encode(data):
+    Encodes bytes as Base64.
+
+base64.b64decode(data):
+    Decodes Base64 to bytes.
+
+statistics.mean(values):
+    Calculates average.
+
+time.perf_counter():
+    Gets a high-resolution timer value.
+
+f"{value:.6f}":
+    Formats a number with 6 digits after the decimal point.
+
+
+============================================================
+
+Commands to read this file:
+    nano assignment_6_notes.txt
+    cat assignment_6_notes.txt
+    less assignment_6_notes.txt   (press q to exit)

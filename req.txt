@@ -1,0 +1,121 @@
+CRYPTOGRAPHY ASSIGNMENTS - PYTHON LIBRARY INSTALLATION COMMANDS
+===================================================================
+
+Assignments covered:
+  Assignment 3 - RSA
+  Assignment 4 - XOR encryption
+  Assignment 5 - Diffie-Hellman
+  Assignment 6 - SHA-1
+  Assignment 7 - DSA digital signature
+  Assignment 9 - Hybrid image encryption
+
+1. CHECK PYTHON VERSION
+-----------------------
+python3 --version
+
+2. INSTALL THE REQUIRED LIBRARIES
+---------------------------------
+Only two external libraries are required for the assignments:
+
+  - pycryptodome : used for RSA operations in Assignment 3
+  - cryptography : used for DSA in Assignment 7 and RSA/AES-GCM/signatures
+                   in Assignment 9
+
+Install both with:
+
+python3 -m pip install pycryptodome cryptography
+
+If your system uses "python" instead of "python3", run:
+
+python -m pip install pycryptodome cryptography
+
+3. IF LINUX DOES NOT ALLOW SYSTEM-WIDE INSTALLATION
+---------------------------------------------------
+Create a virtual environment:
+
+python3 -m venv crypto_env
+
+Activate it:
+
+source crypto_env/bin/activate
+
+Install the libraries inside it:
+
+python -m pip install pycryptodome cryptography
+
+Whenever you work on the assignments later, activate the environment first:
+
+source crypto_env/bin/activate
+
+4. VERIFY THE INSTALLATION
+--------------------------
+Check PyCryptodome:
+
+python3 -c "from Crypto.PublicKey import RSA; print('PyCryptodome OK')"
+
+Check cryptography:
+
+python3 -c "from cryptography.hazmat.primitives.asymmetric import dsa, rsa; print('Cryptography OK')"
+
+If both commands print their respective OK messages, the libraries are installed.
+
+If you are using the virtual environment, you can run the same checks with:
+
+python -c "from Crypto.PublicKey import RSA; print('PyCryptodome OK')"
+
+python -c "from cryptography.hazmat.primitives.asymmetric import dsa, rsa; print('Cryptography OK')"
+
+5. WHICH ASSIGNMENTS NEED INSTALLATION?
+---------------------------------------
+Assignment 3 - RSA:
+  Requires pycryptodome.
+
+Assignment 4 - XOR encryption:
+  No external library required; uses built-in Python operations.
+
+Assignment 5 - Diffie-Hellman:
+  No external library required for the basic educational implementation;
+  uses built-in Python arithmetic.
+
+Assignment 6 - SHA-1:
+  No external library required; Python includes hashlib.
+
+Assignment 7 - DSA:
+  Requires cryptography.
+
+Assignment 9 - Hybrid image encryption:
+  Requires cryptography. The program may also use built-in modules such as
+  os, pathlib, and hashlib. If the supplied code imports another third-party
+  image-processing package, install that separately.
+
+6. IMPORTANT NOTES
+------------------
+- Install the package named "pycryptodome"; the import name in Python is "Crypto".
+- Do not install a package named "crypto" as a substitute.
+- Run installation commands in the same Python environment that you use to
+  execute the assignment programs.
+- If "python3 -m pip" is unavailable, install pip for your Python distribution
+  or use the virtual-environment instructions above.
+
+7. QUICK COPY-AND-PASTE SETUP (LINUX)
+------------------------------------
+python3 --version
+python3 -m venv crypto_env
+source crypto_env/bin/activate
+python -m pip install pycryptodome cryptography
+python -c "from Crypto.PublicKey import RSA; print('PyCryptodome OK')"
+python -c "from cryptography.hazmat.primitives.asymmetric import dsa, rsa; print('Cryptography OK')"
+
+8. HOW TO OPEN THIS FILE IN THE TERMINAL
+----------------------------------------
+nano crypto_library_install_commands.txt
+
+or:
+
+cat crypto_library_install_commands.txt
+
+or:
+
+less crypto_library_install_commands.txt
+
+Press q to exit less.
